@@ -32,6 +32,11 @@ func (g *Game) EnterStartState(diff Difficulty) {
 	g.EnterRunState()
 }
 
+func (g *Game) EnterWinLoseState(sub GameSubState) {
+	g.State = WinLoseGame
+	g.SubState = sub
+}
+
 func (g *Game) EnterRunState() {
 	g.State = RunGame
 }
@@ -56,6 +61,15 @@ func (g *Game) handleEventRun(k KeyboardEvent) {
 
 	if k.Input == CONFIRM {
 		g.Board.RevealCell(nx, ny)
+	} else if k.Input == ACTION_1 {
+		c := g.Board.GetCell(nx, ny)
+		g.Board.FlagCell(nx, ny, !c.IsFlagged)
+	}
+
+	if g.Board.IsWin() {
+		g.EnterWinLoseState(Win)
+	} else if g.Board.IsLose() {
+		g.EnterWinLoseState(Lose)
 	}
 }
 

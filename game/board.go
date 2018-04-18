@@ -10,13 +10,13 @@ type Vec2i struct {
 }
 
 type Board struct {
-	Cells []Cell
+	Cells []*Cell
 	width int
 }
 
 func NewBoard(width int, prob float32) *Board {
 	cellCount := width * width
-	cells := make([]Cell, cellCount, cellCount)
+	cells := make([]*Cell, cellCount, cellCount)
 	board := Board{cells, width}
 	board.InitializeBoard(prob)
 	return &board
@@ -31,11 +31,13 @@ func (b *Board) InitializeBoard(prob float32) {
 	expectedCap := int(float32(cellCount) * prob)
 	mineIndicies := make([]int, 0, expectedCap)
 	for i := range b.Cells {
-		b.Cells[i].BombCount = 0
-		b.Cells[i].IsFlagged = false
-		b.Cells[i].IsMine = false
-		b.Cells[i].IsRevealed = false
-		b.Cells[i].Index = i
+		b.Cells[i] = &Cell{
+			BombCount:  0,
+			IsFlagged:  false,
+			IsMine:     false,
+			IsRevealed: false,
+			Index:      i,
+		}
 
 		chance := rand.Float32()
 		if chance < prob {
@@ -46,7 +48,6 @@ func (b *Board) InitializeBoard(prob float32) {
 	// go through all mines and increment bomb count for adjacent mines
 	for i := range mineIndicies {
 		index := mineIndicies[i]
-		x, y := b.IndexToXY(index)
 		adjacent := b.GetAdjacent(index)
 		for _, cell := range adjacent {
 			cell.BombCount++
@@ -76,7 +77,7 @@ func (b *Board) GetAdjacent(index int) []*Cell {
 			continue
 		}
 		adj := (other.y * b.width) + other.x
-		cells = append(cells, &b.Cells[adj])
+		cells = append(cells, b.Cells[adj])
 	}
 	return cells
 }
@@ -102,17 +103,56 @@ func (b *Board) XYToIndex(x int, y int) int {
 
 func (b *Board) GetCell(x int, y int) *Cell {
 	index := (y * b.width) + x
-	return &b.Cells[index]
+	return b.Cells[index]
 }
 
 func (b *Board) RevealCell(x int, y int) {
 	queue := make([]*Cell, 0)
 	queue = append(queue, b.GetCell(x, y))
-	for len(queue) > 0 {
+	for len(queue) != 0 {
 		cell := queue[0]
+		queue = queue[1:]
+		cell.IsRevealed = true
+		adj := b.GetAdjacent(cell.Index)
+		for _, c := range adj {
+			inQueue := false
+			for _, o := range queue {
+				if o == c {
+					inQueue = true
+					break
+				}
+			}
+			if !inQueue && !c.IsMine && !c.IsRevealed && !c.IsFlagged {
+				if c.BombCount == 0 {
+					queue = append(queue, c)
+				} else {
+					c.IsRevealed = true
+				}
+			}
+		}
 	}
-	b.GetCell(x, y).IsRevealed = true
+}
 
+func (b *Board) IsWin() bool {
+	for _, c := range b.Cells {
+		if !c.IsRevealed {
+			if c.IsMine && c.IsFlagged {
+				continue
+			} else {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (b *Board) IsLose() bool {
+	for _, c := range b.Cells {
+		if c.IsRevealed && c.IsMine {
+			return true
+		}
+	}
+	return false
 }
 
 func (b *Board) FlagCell(x int, y int, flag bool) {

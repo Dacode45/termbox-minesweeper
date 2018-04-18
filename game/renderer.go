@@ -34,6 +34,8 @@ func (g *Game) render(t time.Time) error {
 		g.renderMainMenu(wnd, t)
 	case RunGame:
 		g.renderRun(wnd, t)
+	case WinLoseGame:
+		g.renderWinLoose(wnd, t)
 	}
 
 	return termbox.Flush()
@@ -41,6 +43,14 @@ func (g *Game) render(t time.Time) error {
 
 func (g *Game) renderDebug(wnd Window, t time.Time) {
 	tbPrint(0, 0, ColorDefault, ColorBackground, fmt.Sprintf("%v %v", g, wnd))
+}
+
+func (g *Game) renderWinLoose(wnd Window, t time.Time) {
+	msg := "You won!"
+	if g.SubState == Lose {
+		msg = "You lost!"
+	}
+	tbPrint(0, 0, ColorDefault, ColorBackground, msg)
 }
 
 func (g *Game) renderMainMenu(wnd Window, t time.Time) {

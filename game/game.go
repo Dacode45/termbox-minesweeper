@@ -25,6 +25,12 @@ const (
 	ChooseDifficulty
 )
 
+// Win Lose State
+const (
+	Win GameSubState = iota
+	Lose
+)
+
 type Game struct {
 	StartTime time.Time
 	Time      time.Duration
